@@ -27,6 +27,8 @@ def getCharacter(prompt):
         # Convert bytes data to PIL Image
         img = Image.open(BytesIO(img_bytes))
 
-        return img
+        # Save the image
+        img.save("generated_image.png")
+        print("Image saved successfully.")
     else:
         print("No image data found.")
