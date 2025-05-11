@@ -1,0 +1,12 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>Lista komiksów</h2>
+<ul>
+    {% for comic in comics %}
+        <li>
+            <strong>{{ comic.title }}</strong><br>
+            {{ comic.description }}
+        </li>
+    {% endfor %}
+</ul>
+{% endblock %}

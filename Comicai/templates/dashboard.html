@@ -1,0 +1,10 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>Dashboard</h2>
+<ul>
+    <li><a href="{{ url_for('add_character') }}">Dodaj postać</a></li>
+    <li><a href="{{ url_for('view_characters') }}">Zobacz postacie</a></li>
+    <li><a href="{{ url_for('add_comic') }}">Dodaj komiks</a></li>
+    <li><a href="{{ url_for('view_comics') }}">Zobacz komiksy</a></li>
+</ul>
+{% endblock %}

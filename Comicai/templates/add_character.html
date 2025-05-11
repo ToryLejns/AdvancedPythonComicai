@@ -1,0 +1,13 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>Dodaj postać</h2>
+<form method="POST" enctype="multipart/form-data">
+    <label for="name">Nazwa postaci:</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="image">Obraz postaci:</label>
+    <input type="file" id="image" name="image" accept="image/*">
+
+    <button type="submit">Dodaj</button>
+</form>
+{% endblock %}

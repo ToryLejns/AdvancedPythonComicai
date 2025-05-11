@@ -1,0 +1,9 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>Lista postaci</h2>
+<ul>
+    {% for character in characters %}
+        <li>{{ character.name }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

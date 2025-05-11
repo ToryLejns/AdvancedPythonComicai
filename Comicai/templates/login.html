@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="form-container">
+    <h2>Logowanie</h2>
+
+    <form method="POST">
+        <input type="text" name="username" placeholder="Nazwa użytkownika" required>
+        <input type="password" name="password" placeholder="Hasło" required>
+        <button type="submit">Zaloguj</button>
+    </form>
+
+    <p class="form-link">Nie masz konta? <a href="{{ url_for('register') }}">Zarejestruj się</a></p>
+</div>
+{% endblock %}

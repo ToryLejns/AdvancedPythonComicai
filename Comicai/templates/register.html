@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="form-container">
+    <h2>Rejestracja</h2>
+    <form method="POST">
+        <input type="text" name="username" placeholder="Nazwa użytkownika" required>
+        <input type="password" name="password" placeholder="Hasło" required>
+        <button type="submit">Zarejestruj</button>
+    </form>
+    {% if username_exists %}
+        <p class="error-message">Użytkownik już istnieje.</p>
+    {% endif %}
+    <p class="form-link">Masz już konto? <a href="{{ url_for('login') }}">Zaloguj się</a></p>
+</div>
+{% endblock %}
