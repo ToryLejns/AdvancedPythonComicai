@@ -23,7 +23,7 @@ def index():
     #
     # img = get_img(1)
 
-    return render_template('dashboard/index.html')
+    return render_template('dashboard/dashboard.html')
 
 @bp.route('/generateCharacter', methods=('GET', 'POST'))
 @login_required

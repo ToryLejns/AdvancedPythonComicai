@@ -1,15 +1,14 @@
-{% extends 'base.html' %}
-
-{% block header %}
-  <h1>{% block title %}Log In{% endblock %}</h1>
-{% endblock %}
-
+{% extends 'layout.html' %}
 {% block content %}
-  <form method="post">
-    <label for="username">Username</label>
-    <input name="username" id="username" required>
-    <label for="password">Password</label>
-    <input type="password" name="password" id="password" required>
-    <input type="submit" value="Log In">
-  </form>
+<div class="form-container">
+    <h2>Logowanie</h2>
+
+    <form method="POST">
+        <input type="text" name="username" placeholder="Nazwa użytkownika" required>
+        <input type="password" name="password" placeholder="Hasło" required>
+        <button type="submit">Zaloguj</button>
+    </form>
+
+    <p class="form-link">Nie masz konta? <a href="{{ url_for('register') }}">Zarejestruj się</a></p>
+</div>
 {% endblock %}

@@ -1,3 +1,3 @@
-first run *Comicai --app flaskr init-db* to initalize database
+first run # *flask --app Comicai init-db* # to initalize database
 
-then run *Comicai --app flaskr run --debug* to start the server
+then run # *flask --app Comicai run --debug* # to start the server
