@@ -1,9 +1,17 @@
-{% extends 'layout.html' %}
+{% extends "layout.html" %}
 {% block content %}
-<h2>Lista postaci</h2>
+<h2>Twoje postacie</h2>
+
 <ul>
-    {% for character in characters %}
-        <li>{{ character.name }}</li>
-    {% endfor %}
+  {% for c in characters %}
+    <li>
+      <a href="{{ url_for('dashboard.character_detail',
+                           char_id=c['id']) }}">
+        {{ c['title'] }}
+      </a>
+    </li>
+  {% else %}
+    <li>Brak postaci.</li>
+  {% endfor %}
 </ul>
 {% endblock %}

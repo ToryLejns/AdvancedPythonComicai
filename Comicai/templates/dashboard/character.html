@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>{{ character['name'] }}</h2>
+
+<img src="{{ url_for('dashboard.character_image',
+                     char_id=character['id']) }}"
+     alt="{{ character['name'] }}"
+     style="max-width:512px; border:1px solid #ccc;">
+
+<p><a href="{{ url_for('dashboard.view_characters') }}">← Wróć do listy</a></p>
+{% endblock %}
