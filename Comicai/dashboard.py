@@ -50,7 +50,7 @@ def add_character():
             #     ("title", imageBinary, g.user['id'])
             # )
             # db.commit()
-            return redirect(url_for('dashboard/index.html'))
+            return redirect(url_for('dashboard/dashboard.html'))
 
     return render_template('dashboard/add_character.html')
 
