@@ -10,6 +10,6 @@
     {% if username_exists %}
         <p class="error-message">Użytkownik już istnieje.</p>
     {% endif %}
-    <p class="form-link">Masz już konto? <a href="{{ url_for('login') }}">Zaloguj się</a></p>
+    <p class="form-link">Masz już konto? <a href="{{ url_for('auth.login') }}">Zaloguj się</a></p>
 </div>
 {% endblock %}

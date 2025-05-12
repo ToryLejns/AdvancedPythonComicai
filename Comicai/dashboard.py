@@ -25,9 +25,9 @@ def index():
 
     return render_template('dashboard/dashboard.html')
 
-@bp.route('/generateCharacter', methods=('GET', 'POST'))
+@bp.route('/add_character', methods=('GET', 'POST'))
 @login_required
-def generateCharacter():
+def add_character():
     if request.method == 'POST':
         # title = request.form['title']
         # prompt = request.form['prompt']
@@ -52,7 +52,7 @@ def generateCharacter():
             # db.commit()
             return redirect(url_for('dashboard/index.html'))
 
-    return render_template('dashboard/generateCharacter.html')
+    return render_template('dashboard/add_character.html')
 
 def get_img(id, check_author=True):
     img = get_db().execute(
@@ -69,3 +69,18 @@ def get_img(id, check_author=True):
         abort(403)
 
     return img
+
+@bp.route('/add_comic', methods=('GET', 'POST'))
+@login_required
+def add_comic():
+    return render_template('dashboard/add_comic.html')
+
+@bp.route('/view_characters', methods=('GET', 'POST'))
+@login_required
+def view_characters():
+    return render_template('dashboard/view_characters.html')
+
+@bp.route('/view_comics', methods=('GET', 'POST'))
+@login_required
+def view_comics():
+    return render_template('dashboard/view_comics.html')
