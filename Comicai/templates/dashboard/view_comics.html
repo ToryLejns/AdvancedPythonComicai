@@ -1,12 +1,22 @@
-{% extends 'layout.html' %}
+{% extends "layout.html" %}
 {% block content %}
-<h2>Lista komiksów</h2>
-<ul>
-    {% for comic in comics %}
-        <li>
-            <strong>{{ comic.title }}</strong><br>
-            {{ comic.description }}
-        </li>
-    {% endfor %}
+<h2>Twoje komiksy</h2>
+
+<ul class="comic-list">
+  {% for c in comics %}
+    <li>
+      <a href="{{ url_for('dashboard.comic_detail', comic_id=c['id']) }}">
+        {% if c['page1_id'] %}
+          <img src="{{ url_for('dashboard.comic_page_image',
+                               page_id=c['page1_id']) }}"
+               alt="thumb"
+               style="width:80px;height:80px;object-fit:cover;border-radius:6px;">
+        {% endif %}
+        {{ c['title'] }}
+      </a>
+    </li>
+  {% else %}
+    <li>Brak komiksów.</li>
+  {% endfor %}
 </ul>
 {% endblock %}

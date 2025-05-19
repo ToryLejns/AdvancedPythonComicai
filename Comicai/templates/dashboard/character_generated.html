@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2 style="text-align:center; margin-top:24px;">{{ character['title'] }}</h2>
+
+<div style="display:flex; justify-content:center; margin-top:24px;">
+  <img src="{{ url_for('dashboard.character_image', char_id=character['id']) }}"
+       alt="{{ character['title'] }}"
+       style="max-width:512px; border:3px solid #e11d48; border-radius:8px;">
+</div>
+
+<div style="display:flex; justify-content:center; margin-top:32px;">
+  <form class="add-page-card"
+        action="{{ url_for('dashboard.regenerate_character', char_id=character['id']) }}"
+        method="POST" enctype="multipart/form-data" style="width:340px;">
+      <h3 style="margin-top:0; text-align:center;">Regeneruj obraz</h3>
+
+      <input type="hidden" name="prompt" value="{{ prompt }}">
+
+      <label for="image">Nowy obraz bazowy (opcjonalnie):</label><br>
+      <input type="file" id="image" name="image" accept="image/*" style="width:100%; margin-bottom:18px;">
+
+      <button type="submit" style="width:100%;">Regeneruj</button>
+  </form>
+</div>
+
+<p style="text-align:center; margin-top:32px;">
+  <a href="{{ url_for('dashboard.view_characters') }}">← Wróć do listy postaci</a>
+</p>
+
+{% endblock %}
