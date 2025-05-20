@@ -36,38 +36,36 @@ def _mock_image_to_image_api(prompt: str, source_img: Image.Image) -> Image.Imag
 # PUBLIC FUNCTIONS USED BY THE DASHBOARD
 # ---------------------------------------------------------------------------
 
-def getTextToImage(title: str, prompt: str) -> int:
+def getTextToImage(name: str, prompt: str) -> int:
     img  = _mock_text_to_image_api(prompt)
     blob = pil_image_to_blob(img)
 
     db  = get_db()
     cur = db.execute(
-        """
-        INSERT INTO character (author_id, title, image, created)
-        VALUES (?, ?, ?, ?)
-        """,
-        (g.user["id"], title, blob, datetime.utcnow()),
+        """INSERT INTO character
+           (author_id, name, prompt, image, created)
+           VALUES (?, ?, ?, ?, ?)""",
+        (g.user['id'], name, prompt, blob, datetime.utcnow()),
     )
     db.commit()
     return cur.lastrowid
 
 
-
-def getImageToImage(title: str, prompt: str, file_storage) -> int:
-    uploaded_img = Image.open(file_storage.stream).convert("RGB")
-    img  = _mock_image_to_image_api(prompt, uploaded_img)
+def getImageToImage(name: str, prompt: str, upload) -> int:
+    base = Image.open(upload.stream).convert("RGB")
+    img  = _mock_image_to_image_api(prompt, base)
     blob = pil_image_to_blob(img)
 
     db  = get_db()
     cur = db.execute(
-        """
-        INSERT INTO character (author_id, title, image, created)
-        VALUES (?, ?, ?, ?)
-        """,
-        (g.user["id"], title, blob, datetime.utcnow()),
+        """INSERT INTO character
+           (author_id, name, prompt, image, created)
+           VALUES (?, ?, ?, ?, ?)""",
+        (g.user['id'], name, prompt, blob, datetime.utcnow()),
     )
     db.commit()
     return cur.lastrowid
+
 
 def create_comic_and_first_page(title: str, prompt: str, upload=None) -> int:
     db = get_db()
@@ -147,21 +145,22 @@ def add_page_to_comic(comic_id: int, prompt: str, upload=None) -> int:
     return cur.lastrowid
 
 def regenerate_character_image(char_id: int, prompt: str, upload=None) -> None:
-    """
-    Replace the image for an existing character row.
-    """
-    # decide which API to hit
     if upload and upload.filename:
-        base_img  = Image.open(upload.stream).convert("RGB")
-        new_img   = _mock_image_to_image_api(prompt, base_img)
+        base = Image.open(upload.stream).convert("RGB")
+        new  = _mock_image_to_image_api(prompt, base)
     else:
-        new_img   = _mock_text_to_image_api(prompt)
+        new  = _mock_text_to_image_api(prompt)
 
-    blob = pil_image_to_blob(new_img)
+    blob = pil_image_to_blob(new)
 
     db = get_db()
     db.execute(
-        "UPDATE character SET image = ?, created = ? WHERE id = ?",
-        (blob, datetime.utcnow(), char_id),
+        """UPDATE character
+              SET image     = ?,
+                  prompt    = ?,
+                  regen_cnt = regen_cnt + 1,
+                  created   = ?
+            WHERE id = ?""",
+        (blob, prompt, datetime.utcnow(), char_id),
     )
     db.commit()

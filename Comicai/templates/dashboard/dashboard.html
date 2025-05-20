@@ -1,10 +1,30 @@
-{% extends 'layout.html' %}
+{% extends "layout.html" %}
 {% block content %}
-<h2>Dashboard</h2>
-<ul>
-    <li><a href="{{ url_for('dashboard.add_character') }}">Dodaj postać</a></li>
-    <li><a href="{{ url_for('dashboard.view_characters') }}">Zobacz postacie</a></li>
-    <li><a href="{{ url_for('dashboard.add_comic') }}">Dodaj komiks</a></li>
-    <li><a href="{{ url_for('dashboard.view_comics') }}">Zobacz komiksy</a></li>
-</ul>
+
+<div class="dashboard-container">
+
+  <h2 style="text-align:center; margin-top:24px;">Panel sterowania</h2>
+
+  <div class="dashboard-panel">
+
+    <a class="dash-btn" href="{{ url_for('dashboard.add_character') }}">
+      Dodaj postać
+    </a>
+
+    <a class="dash-btn" href="{{ url_for('dashboard.view_characters') }}">
+      Zobacz postacie
+    </a>
+
+    <a class="dash-btn" href="{{ url_for('dashboard.add_comic') }}">
+      Dodaj komiks
+    </a>
+
+    <a class="dash-btn" href="{{ url_for('dashboard.view_comics') }}">
+      Zobacz komiksy
+    </a>
+
+  </div>
+
+</div>
+
 {% endblock %}

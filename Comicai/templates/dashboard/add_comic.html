@@ -1,24 +1,35 @@
-{% extends 'layout.html' %}
+{% extends "layout.html" %}
 {% block content %}
-<h2>Dodaj komiks</h2>
 
-<form method="POST" enctype="multipart/form-data">
-  <label for="title">Tytuł:</label>
-  <input type="text" id="title" name="title" required>
+<h2 style="text-align:center; margin-top:24px;">Dodaj komiks</h2>
 
-  <label for="description">Opis / prompt:</label>
-  <textarea id="description" name="description" rows="4"></textarea>
+<div style="display:flex; justify-content:center; margin-top:32px;">
+  <form class="add-page-card"
+        method="POST" enctype="multipart/form-data"
+        style="width:340px;">
 
-  <label for="characters">Wybierz postacie (Ctrl/⌘ + klik dla wielu):</label>
-  <select id="characters" name="characters" multiple size="5">
-    {% for c in characters %}
-      <option value="{{ c['id'] }}">{{ c['title'] }}</option>
-    {% endfor %}
-  </select>
+    <label for="title">Tytuł:</label><br>
+    <input type="text" id="title" name="title"
+           required style="width:100%; margin-bottom:12px;">
 
-  <label for="image">Obraz bazowy (opcjonalnie):</label>
-  <input type="file" id="image" name="image" accept="image/*">
+    <label for="description">Opis / prompt:</label><br>
+    <textarea id="description" name="description" rows="4" required
+              style="margin-bottom:12px;"></textarea>
 
-  <button type="submit">Dodaj</button>
-</form>
+    <label for="characters">Wybierz postacie:</label><br>
+    <select id="characters" name="characters" multiple size="5"
+            style="margin-bottom:12px;">
+      {% for c in characters %}
+        <option value="{{ c['id'] }}">{{ c['name'] }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="image">Obraz bazowy (opcjonalnie):</label><br>
+    <input type="file" id="image" name="image" accept="image/*"
+           style="width:100%; margin-bottom:18px;">
+
+    <button type="submit" style="width:100%;">Generuj komiks</button>
+  </form>
+</div>
+
 {% endblock %}

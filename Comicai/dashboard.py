@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, url_for, abort, send_file
+    Blueprint, flash, g, redirect, render_template, request, url_for, abort, send_file, current_app
 )
 
 from Comicai.auth import login_required
@@ -20,39 +20,50 @@ def index():
 @login_required
 def add_character():
     if request.method == 'POST':
-        name    = request.form.get('name', '').strip()
-        prompt  = request.form.get('description', '').strip()
-        upload  = request.files.get('image')
+        name   = request.form.get('name', '').strip()
+        prompt = request.form.get('description', '').strip()
+        upload = request.files.get('image')
 
         if not name or not prompt:
             flash('Nazwa i opis są wymagane.')
             return redirect(url_for('dashboard.add_character'))
 
-        if upload and upload.filename:
-            char_id = getImageToImage(name, prompt, upload)   # helper already exists
-        else:
-            char_id = getTextToImage(name, prompt)
+        try:
+            if upload and upload.filename:
+                char_id = getImageToImage(name, prompt, upload)
+            else:
+                char_id = getTextToImage(name, prompt)
+        except Exception as exc:
+            current_app.logger.exception(exc)
+            flash('Coś poszło nie tak przy generowaniu obrazu.')
+            return redirect(url_for('dashboard.add_character'))
 
-        # send user to preview page with prompt carried via query-string
         return redirect(url_for('dashboard.character_generated',
                                 char_id=char_id, prompt=prompt))
 
-    # ─ GET – show the form ─
     return render_template('dashboard/add_character.html')
+
+
 
 @bp.route('/character_generated/<int:char_id>')
 @login_required
 def character_generated(char_id):
-    prompt = request.args.get('prompt', '')      # keep prompt for regeneration
+    prompt = request.args.get('prompt', '')
+
     row = get_db().execute(
-        "SELECT id, title FROM character WHERE id = ? AND author_id = ?",
+        # ▼ switch title → name
+        "SELECT id, name FROM character WHERE id = ? AND author_id = ?",
         (char_id, g.user['id'])
     ).fetchone()
+
     if row is None:
         abort(404)
 
-    return render_template('dashboard/character_generated.html',
-                           character=row, prompt=prompt)
+    return render_template(
+        'dashboard/character_generated.html',
+        character=row,
+        prompt=prompt
+    )
 
 @bp.route('/character/<int:char_id>/regenerate', methods=('POST',))
 @login_required
@@ -73,34 +84,22 @@ def regenerate_character(char_id):
     return redirect(url_for('dashboard.character_generated',
                             char_id=char_id, prompt=prompt))
 
-@bp.route('/view_characters', methods=('GET', 'POST'))
+@bp.route('/view_characters')
 @login_required
 def view_characters():
     rows = get_db().execute(
-        """
-        SELECT id, title
-        FROM   character
-        WHERE  author_id = ?
-        ORDER  BY created DESC
-        """,
-        (g.user["id"],)
+        "SELECT id, name FROM character WHERE author_id = ? ORDER BY created DESC",
+        (g.user['id'],)
     ).fetchall()
-
-    return render_template(
-        "dashboard/view_characters.html",
-        characters=rows
-    )
+    return render_template('dashboard/view_characters.html',
+                           characters=rows)
 
 @bp.route("/character/<int:char_id>")
 @login_required
 def character_detail(char_id):
     row = get_db().execute(
-        """
-        SELECT id, title       AS name
-        FROM   character
-        WHERE  id = ? AND author_id = ?
-        """,
-        (char_id, g.user["id"])
+        "SELECT id, name FROM character WHERE id = ? AND author_id = ?",
+        (char_id, g.user['id'])
     ).fetchone()
 
     if row is None:
@@ -157,7 +156,7 @@ def add_comic():
 
     if request.method == 'GET':
         chars = db.execute(
-            "SELECT id, title FROM character WHERE author_id = ?",
+            "SELECT id, name FROM character WHERE author_id = ?",
             (g.user['id'],)
         ).fetchall()
         return render_template(
@@ -179,11 +178,11 @@ def add_comic():
     if sel_ids:
         placeholders = ','.join('?' * len(sel_ids))
         names = db.execute(
-            f"SELECT title FROM character WHERE id IN ({placeholders}) "
+            f"SELECT name FROM character WHERE id IN ({placeholders}) "
             "AND author_id = ?",
             (*sel_ids, g.user['id'])
         ).fetchall()
-        chars_string = ', '.join(r['title'] for r in names)
+        chars_string = ', '.join(r['name'] for r in names)
         prompt = f"{desc}. Bohaterowie: {chars_string}"
     else:
         prompt = desc
@@ -197,7 +196,7 @@ def add_comic():
 def comic_detail(comic_id):
     db = get_db()
     head = db.execute(
-        "SELECT id, title FROM comic WHERE id = ? AND author_id = ?",
+        "SELECT id, title AS name FROM comic WHERE id = ? AND author_id = ?",
         (comic_id, g.user['id'])
     ).fetchone()
     if head is None:

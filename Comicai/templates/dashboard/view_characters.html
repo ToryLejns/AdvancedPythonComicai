@@ -1,17 +1,23 @@
 {% extends "layout.html" %}
 {% block content %}
-<h2>Twoje postacie</h2>
 
-<ul>
-  {% for c in characters %}
-    <li>
-      <a href="{{ url_for('dashboard.character_detail',
-                           char_id=c['id']) }}">
-        {{ c['title'] }}
+<div class="dashboard-container">
+
+  <h2 style="text-align:center; margin-top:24px;">Twoje postacie</h2>
+
+  <div class="dashboard-panel">
+    {% for c in characters %}
+      <a class="dash-btn"
+         href="{{ url_for('dashboard.character_detail', char_id=c['id']) }}">
+        {{ c['name'] }}
       </a>
-    </li>
-  {% else %}
-    <li>Brak postaci.</li>
-  {% endfor %}
-</ul>
+    {% else %}
+      <p style="color:#fff; text-align:center; width:100%;">
+        Brak postaci.
+      </p>
+    {% endfor %}
+  </div>
+
+</div>
+
 {% endblock %}

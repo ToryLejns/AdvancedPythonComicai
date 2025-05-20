@@ -106,6 +106,11 @@ main {
     width: 100%;
 }
 
+.add-page-card select,
+.add-page-card textarea {
+    width: 100%;
+}
+
 .add-page-card h3 {
     margin-top: 0;
     margin-bottom: 12px;
@@ -172,7 +177,6 @@ main {
     width: 100%;
     height: 360px;
     object-fit: cover;
-    border: 3px solid #e11d48;
     border-radius: 8px;
     background: #fff;
     box-shadow: 0 2px 8px rgba(0,0,0,.1);
@@ -191,3 +195,103 @@ main {
     gap: 16px;
 }
 
+.dashboard-panel {
+    background: #20232a;          /* dark navy */
+    padding: 40px 32px;
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.25);
+    max-width: 720px;
+    margin: 40px auto;            /* centre horizontally */
+    display: flex;
+    flex-wrap: wrap;              /* wrap to next line on mobile */
+    gap: 24px;
+    justify-content: center;
+}
+
+.dash-btn {
+    background: #61dafb;          /* bright blue accent */
+    color: #20232a;
+    text-decoration: none;
+    padding: 16px 24px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    flex: 1 1 220px;              /* min 220 px, grow evenly */
+    text-align: center;
+    transition: transform .15s, filter .15s;
+}
+
+.dash-btn:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.1);
+}
+
+.dash-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 24px rgba(0,0,0,.25);
+}
+
+.dash-card span {            /* small subtitle in accent colour */
+    margin-top: 12px;
+    font-size: 14px;
+    font-weight: 400;
+    color: #61dafb;
+}
+
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.character-panel {
+    background: #20232a;                 /* dark navy, matches dashboard */
+    padding: 40px 32px;
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.25);
+    max-width: 600px;
+    margin: 40px auto;                   /* centre horizontally */
+    display: flex;
+    flex-direction: column;              /* stack image + button */
+    align-items: center;
+    gap: 24px;
+}
+
+.character-panel img {
+    width: 100%;
+    max-width: 400px;                    /* keep a nice size */
+    border-radius: 8px;
+    background: #fff;
+}
+
+.back-btn {
+    flex: none;              /* stop it from stretching */
+    width: auto;
+    padding: 12px 24px;
+}
+
+/* add a little top gap so it doesn't stick to the image */
+.character-panel .back-btn {
+    margin-top: 8px;
+}
+
+.character-panel h2 {
+    margin: 0 0 16px;
+    color: #fff;            /* bright on dark background */
+    font-size: 24px;
+    text-align: center;
+}
+
+.page-item img,
+.character-panel img {
+    border: 3px solid #ffffff;     /* thin white frame fits dark background */
+}
+
+.comic-thumb {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    margin-bottom: 12px;
+}

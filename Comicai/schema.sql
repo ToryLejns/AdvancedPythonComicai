@@ -3,7 +3,6 @@ DROP TABLE IF EXISTS character;
 DROP TABLE IF EXISTS comic;
 DROP TABLE IF EXISTS comic_page;
 
--- ───────────────────────────────────────────────────────────────────
 CREATE TABLE user (
   id       INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT UNIQUE NOT NULL,
@@ -11,28 +10,31 @@ CREATE TABLE user (
 );
 
 CREATE TABLE character (
-  id        INTEGER PRIMARY KEY AUTOINCREMENT,
-  author_id INTEGER NOT NULL,
-  created   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  title     TEXT NOT NULL,
-  image     BLOB NOT NULL,
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  author_id  INTEGER NOT NULL,
+  created    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  name       TEXT NOT NULL,
+  prompt     TEXT NOT NULL,
+  image      BLOB NOT NULL,
+  regen_cnt  INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY (author_id) REFERENCES user (id)
 );
 
 CREATE TABLE comic (
-  id        INTEGER PRIMARY KEY AUTOINCREMENT,
-  author_id INTEGER NOT NULL,
-  created   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  title     TEXT NOT NULL,
-  FOREIGN KEY (author_id) REFERENCES user (id)   -- ← kept
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  author_id  INTEGER NOT NULL,
+  created    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  title      TEXT NOT NULL,
+  FOREIGN KEY (author_id) REFERENCES user (id)
 );
 
 CREATE TABLE comic_page (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   comic_id    INTEGER NOT NULL,
   page_number INTEGER NOT NULL,
-  image       BLOB    NOT NULL,
+  image       BLOB NOT NULL,
   created     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (comic_id) REFERENCES comic (id),
-  UNIQUE (comic_id, page_number)
+
+  UNIQUE (comic_id, page_number),
+  FOREIGN KEY (comic_id) REFERENCES comic (id)
 );
