@@ -1,166 +1,232 @@
-import io
-import random
-from datetime import datetime
+"""
+apiManager.py  –  production version
+Replaces the old in-process mockups with real calls to the LitServe
+diffusion endpoint.
 
-from flask import g
+The public helpers keep exactly the same signatures the dashboard
+already uses:
+
+    getTextToImage(name, prompt)            -> char_id
+    getImageToImage(name, prompt, upload)   -> char_id
+    create_comic_and_first_page(...)
+    add_page_to_comic(...)
+    regenerate_character_image(...)
+
+If the HTTP call fails we raise, letting the route flash an error and
+re-render the form (already handled in dashboard.py).
+"""
+from datetime import datetime
+import io
+import requests
 from PIL import Image
+from flask import g, current_app
 
 from Comicai.blobUtils import pil_image_to_blob
-from Comicai.db import get_db
+from Comicai.db        import get_db
+
+# -----------------------------------------------------------------------
+# CONFIG
+# -----------------------------------------------------------------------
+GEN_URL = (
+    "https://8002-01jvj363s7azr27zgtxpkpce2x.cloudspaces.litng.ai/generate"
+)  # ← centralised so you can swap env-driven later
 
 
-# ---------------------------------------------------------------------------
-# MOCK “APIs” – replace these two functions with real HTTP calls later
-# ---------------------------------------------------------------------------
-
-def _mock_text_to_image_api(prompt: str) -> Image.Image:
+# -----------------------------------------------------------------------
+# LOW-LEVEL HTTP WRAPPER
+# -----------------------------------------------------------------------
+def _call_generation_api(prompt: str, pil_img: Image.Image | None = None) -> Image.Image:
     """
-    Return a plain RGB square – colour derived from prompt hash.
-    Acts as a stand-in for a diffusion model endpoint.
+    Talk to the LitServe endpoint.  If *pil_img* is None we do a pure
+    txt-to-img; otherwise img-to-img.
+
+    Raises requests.HTTPError on non-200 so the caller can handle it.
     """
-    seed = hash(prompt) & 0xFFFFFF
-    colour = ((seed >> 16) & 0xFF, (seed >> 8) & 0xFF, seed & 0xFF)
-    return Image.new("RGB", (512, 512), colour)
+    files: dict[str, tuple] = {"prompt": (None, prompt)}
+    if pil_img is not None:
+        buf = io.BytesIO()
+        pil_img.save(buf, format="PNG")
+        buf.seek(0)
+        files["image"] = ("source.png", buf, "image/png")
+
+    r = requests.post(GEN_URL, files=files, timeout=180)
+    r.raise_for_status()  # will raise HTTPError for 4xx/5xx
+
+    return Image.open(io.BytesIO(r.content)).convert("RGB")
 
 
-def _mock_image_to_image_api(prompt: str, source_img: Image.Image) -> Image.Image:
-    """
-    Very cheap “edit”: draw the prompt text in the top-left corner.
-    Keeps the demo predictable while proving the round-trip works.
-    """
-    edited = source_img.copy().convert("RGBA")
-    return edited  # real implementation would call LitServe
-
-
-# ---------------------------------------------------------------------------
-# PUBLIC FUNCTIONS USED BY THE DASHBOARD
-# ---------------------------------------------------------------------------
-
+# -----------------------------------------------------------------------
+# PUBLIC HELPERS  —  CHARACTER
+# -----------------------------------------------------------------------
 def getTextToImage(name: str, prompt: str) -> int:
-    img  = _mock_text_to_image_api(prompt)
-    blob = pil_image_to_blob(img)
-
-    db  = get_db()
-    cur = db.execute(
-        """INSERT INTO character
-           (author_id, name, prompt, image, created)
-           VALUES (?, ?, ?, ?, ?)""",
-        (g.user['id'], name, prompt, blob, datetime.utcnow()),
-    )
-    db.commit()
-    return cur.lastrowid
+    img = _call_generation_api(prompt)
+    return _store_character(name, prompt, img)
 
 
-def getImageToImage(name: str, prompt: str, upload) -> int:
-    base = Image.open(upload.stream).convert("RGB")
-    img  = _mock_image_to_image_api(prompt, base)
-    blob = pil_image_to_blob(img)
-
-    db  = get_db()
-    cur = db.execute(
-        """INSERT INTO character
-           (author_id, name, prompt, image, created)
-           VALUES (?, ?, ?, ?, ?)""",
-        (g.user['id'], name, prompt, blob, datetime.utcnow()),
-    )
-    db.commit()
-    return cur.lastrowid
+def getImageToImage(name: str, prompt: str, upload_fs) -> int:
+    base_img = Image.open(upload_fs.stream).convert("RGB")
+    img = _call_generation_api(prompt, base_img)
+    return _store_character(name, prompt, img)
 
 
-def create_comic_and_first_page(title: str, prompt: str, upload=None) -> int:
+def regenerate_character_image(char_id: int, prompt: str, upload_fs=None) -> None:
+    base_img = None
+    if upload_fs and upload_fs.filename:
+        base_img = Image.open(upload_fs.stream).convert("RGB")
+
+    img = _call_generation_api(prompt, base_img)
+
     db = get_db()
+    db.execute(
+        """
+        UPDATE character
+        SET image=?, prompt=?, regen_cnt = regen_cnt + 1, created=?
+        WHERE id=? AND author_id=?
+        """,
+        (
+            pil_image_to_blob(img),
+            prompt,
+            datetime.utcnow(),
+            char_id,
+            g.user["id"],
+        ),
+    )
+    db.commit()
 
-    # decide which API to use
-    if upload:
-        base_img  = Image.open(upload.stream).convert("RGB")
-        page_img  = _mock_image_to_image_api(prompt, base_img)
-    else:
-        page_img  = _mock_text_to_image_api(prompt)
 
+def _store_character(name: str, prompt: str, pil_img: Image.Image) -> int:
+    blob = pil_image_to_blob(pil_img)
+    db = get_db()
+    cur = db.execute(
+        """
+        INSERT INTO character (author_id, name, prompt, image, created)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (g.user["id"], name, prompt, blob, datetime.utcnow()),
+    )
+    db.commit()
+    return cur.lastrowid
+
+
+# -----------------------------------------------------------------------
+# PUBLIC HELPERS —  COMICS
+# -----------------------------------------------------------------------
+def create_comic_and_first_page(title: str, prompt: str, upload_fs=None) -> int:
+    base_img = None
+    if upload_fs and upload_fs.filename:
+        base_img = Image.open(upload_fs.stream).convert("RGB")
+
+    page_img = _call_generation_api(prompt, base_img)
     page_blob = pil_image_to_blob(page_img)
 
-    # --- comic header (NO image column) ------------------------------
+    db = get_db()
     cur = db.execute(
         "INSERT INTO comic (author_id, title, created) VALUES (?, ?, ?)",
         (g.user["id"], title, datetime.utcnow()),
     )
     comic_id = cur.lastrowid
 
-    # --- page 1 -------------------------------------------------------
     db.execute(
-        "INSERT INTO comic_page (comic_id, page_number, image, created) "
-        "VALUES (?, 1, ?, ?)",
-        (comic_id, page_blob, datetime.utcnow()),
+        """INSERT INTO comic_page (comic_id, page_number, image, prompt, created)
+           VALUES (?, 1, ?, ?, ?)""",
+        (comic_id, page_blob, prompt, datetime.utcnow()),
     )
-
     db.commit()
     return comic_id
 
-def add_page_to_comic(comic_id: int, prompt: str, upload=None) -> int:
-    """
-    Append a page.  If *upload* is None, use the previous page of
-    this comic as the base image.
-    """
-    db = get_db()
 
-    # ── determine the source image ───────────────────────────────────
-    if upload and upload.filename:
-        # user-supplied base
-        base_img = Image.open(upload.stream).convert("RGB")
-        result_img = _mock_image_to_image_api(prompt, base_img)
-
+def add_page_to_comic(comic_id: int, prompt: str, upload_fs=None) -> int:
+    base_img = None
+    if upload_fs and upload_fs.filename:
+        base_img = Image.open(upload_fs.stream).convert("RGB")
     else:
-        # find last existing page (if any)
-        row = db.execute(
-            """SELECT image
-               FROM   comic_page
-               WHERE  comic_id = ?
-               ORDER  BY page_number DESC
-               LIMIT  1""",
-            (comic_id,)
+        # use last page as base
+        row = get_db().execute(
+            "SELECT image FROM comic_page WHERE comic_id=? ORDER BY page_number DESC LIMIT 1",
+            (comic_id,),
         ).fetchone()
-
         if row:
-            prev_img   = Image.open(io.BytesIO(row["image"])).convert("RGB")
-            result_img = _mock_image_to_image_api(prompt, prev_img)
-        else:
-            # shouldn’t happen, but fall back gracefully
-            result_img = _mock_text_to_image_api(prompt)
+            base_img = Image.open(io.BytesIO(row["image"])).convert("RGB")
 
-    blob = pil_image_to_blob(result_img)
+    new_img = _call_generation_api(prompt, base_img)
+    blob = pil_image_to_blob(new_img)
 
-    # ── next page number ─────────────────────────────────────────────
-    next_num = db.execute(
-        "SELECT COALESCE(MAX(page_number), 0) + 1 AS n "
-        "FROM comic_page WHERE comic_id = ?",
-        (comic_id,)
-    ).fetchone()["n"]
+    db = get_db()
+    next_no = (
+        db.execute(
+            "SELECT COALESCE(MAX(page_number),0)+1 FROM comic_page WHERE comic_id=?",
+            (comic_id,),
+        )
+        .fetchone()[0]
+    )
 
     cur = db.execute(
-        """INSERT INTO comic_page (comic_id, page_number, image, created)
-           VALUES (?, ?, ?, ?)""",
-        (comic_id, next_num, blob, datetime.utcnow()),
+        "INSERT INTO comic_page (comic_id, page_number, image, prompt, created) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (comic_id, next_no, blob, prompt, datetime.utcnow()),
     )
     db.commit()
     return cur.lastrowid
 
-def regenerate_character_image(char_id: int, prompt: str, upload=None) -> None:
-    if upload and upload.filename:
-        base = Image.open(upload.stream).convert("RGB")
-        new  = _mock_image_to_image_api(prompt, base)
-    else:
-        new  = _mock_text_to_image_api(prompt)
-
-    blob = pil_image_to_blob(new)
-
+def regenerate_comic_page(page_id: int, prompt: str, upload_fs=None) -> None:
+    """
+    Overwrite the image for an existing comic_page row.
+    Keeps page_number; bumps `created` timestamp.
+    """
     db = get_db()
+
+    # verify ownership & fetch comic_id (for base img fallback if needed)
+    meta = db.execute(
+        """SELECT comic_id
+             FROM comic_page
+            JOIN comic ON comic_page.comic_id = comic.id
+            WHERE comic_page.id = ? AND comic.author_id = ?""",
+        (page_id, g.user["id"])
+    ).fetchone()
+    if meta is None:
+        raise PermissionError("page not found or not yours")
+
+    base_img = None
+    if upload_fs and upload_fs.filename:
+        base_img = Image.open(upload_fs.stream).convert("RGB")
+
+    new_img = _call_generation_api(prompt, base_img)
+    blob = pil_image_to_blob(new_img)
+
     db.execute(
-        """UPDATE character
-              SET image     = ?,
-                  prompt    = ?,
-                  regen_cnt = regen_cnt + 1,
-                  created   = ?
+        """UPDATE comic_page
+              SET image   = ?,
+                  created = ?
             WHERE id = ?""",
-        (blob, prompt, datetime.utcnow(), char_id),
+        (blob, datetime.utcnow(), page_id),
+    )
+    db.commit()
+
+def regenerate_last_page(comic_id: int) -> None:
+    """
+    Re-generate only the newest page, using its stored prompt and
+    feeding the old image as base.
+    """
+    db = get_db()
+    row = db.execute(
+        """SELECT id, prompt, image
+             FROM comic_page
+            WHERE comic_id = ?
+            ORDER BY page_number DESC
+            LIMIT 1""",
+        (comic_id,)
+    ).fetchone()
+
+    if row is None:
+        raise ValueError("Comic has no pages")
+
+    old_img  = Image.open(io.BytesIO(row["image"])).convert("RGB")
+    prompt   = row["prompt"]
+    new_img  = _call_generation_api(prompt, old_img)
+    blob     = pil_image_to_blob(new_img)
+
+    db.execute(
+        "UPDATE comic_page SET image=?, created=? WHERE id=?",
+        (blob, datetime.utcnow(), row["id"]),
     )
     db.commit()

@@ -1,26 +1,30 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<h2 style="text-align:center; margin-top:24px;">{{ comic['title'] }}</h2>
+<h2 style="text-align:center; margin-top:24px;">{{ comic['name'] }}</h2>
 
 <div class="comic-wrapper">
 
-  <!-- ███  Grid  ███ -->
+  <!-- ░░░  Grid with pages  ░░░ -->
   <div class="page-grid">
     {% for p in pages %}
       <div class="page-item">
-        <h4>Strona {{ p['page_number'] }}</h4>
-        <img src="{{ url_for('dashboard.comic_page_image', page_id=p['id']) }}"
+        <h4 style="text-align:center; margin:8px 0;">
+          Strona {{ p['page_number'] }}
+        </h4>
+        <img src="{{ url_for('dashboard.comic_page_image',
+                             page_id=p['id']) }}"
              alt="Strona {{ p['page_number'] }}">
       </div>
     {% else %}
-      <p>Brak stron w tym komiksie.</p>
+      <p style="color:#fff; text-align:center;">Brak stron w tym komiksie.</p>
     {% endfor %}
   </div>
 
-  <!-- ███  Sticky side panel  ███ -->
+  <!-- ░░░  Sticky sidebar  ░░░ -->
   <div class="side-panel">
 
+    <!-- Add-page card (unchanged) -->
     <form class="add-page-card"
           action="{{ url_for('dashboard.add_page', comic_id=comic['id']) }}"
           method="POST" enctype="multipart/form-data">
@@ -32,14 +36,25 @@
       <label for="image">Obraz bazowy (opcjonalnie):</label><br>
       <input type="file" id="image" name="image" accept="image/*"><br>
 
-      <button type="submit">Generuj stronę</button>
+      <button type="submit" class="dash-btn" style="width:100%;">
+        Generuj stronę
+      </button>
     </form>
 
-    <a class="back-button"
+    <!-- NEW  regenerate-last-page button -->
+    <form action="{{ url_for('dashboard.regenerate_last',
+                             comic_id=comic['id']) }}"
+          method="POST">
+      <button class="dash-btn" style="width:100%;">
+        Regeneruj ostatnią stronę
+      </button>
+    </form>
+
+    <!-- Back to list -->
+    <a class="dash-btn back-btn"
        href="{{ url_for('dashboard.view_comics') }}">
        ← Wróć do listy
     </a>
-
   </div>
 
 </div>

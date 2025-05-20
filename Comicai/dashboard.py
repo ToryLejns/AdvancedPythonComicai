@@ -255,3 +255,46 @@ def add_page(comic_id):
     add_page_to_comic(comic_id, prompt, upload)
     flash("Dodano nową stronę.")
     return redirect(url_for("dashboard.comic_detail", comic_id=comic_id))
+
+@bp.route("/comic_page/<int:page_id>/regenerate", methods=("POST",))
+@login_required
+def regenerate_page(page_id):
+    prompt = request.form.get("prompt", "").strip()
+    upload = request.files.get("image")
+
+    if not prompt:
+        flash("Opis / prompt jest wymagany.")
+        # look up parent comic to redirect back
+        comic_id = get_db().execute(
+            "SELECT comic_id FROM comic_page WHERE id = ?", (page_id,)
+        ).fetchone()
+        return redirect(url_for("dashboard.comic_detail",
+                                comic_id=comic_id["comic_id"]))
+
+    try:
+        regenerate_comic_page(page_id, prompt, upload)
+        flash("Stronę zregenerowano.")
+    except PermissionError:
+        abort(404)
+    return redirect(request.referrer or url_for("dashboard.view_comics"))
+
+@bp.route("/comic/<int:comic_id>/regenerate_last", methods=("POST",))
+@login_required
+def regenerate_last(comic_id):
+    # security: ensure ownership
+    owns = get_db().execute(
+        "SELECT 1 FROM comic WHERE id=? AND author_id=?",
+        (comic_id, g.user['id'])
+    ).fetchone()
+    if owns is None:
+        abort(404)
+
+    try:
+        regenerate_last_page(comic_id)
+        flash("Ostatnia strona zregenerowana.")
+    except Exception as exc:
+        current_app.logger.exception(exc)
+        flash("Nie udało się zregenerować strony.")
+
+    return redirect(url_for("dashboard.comic_detail", comic_id=comic_id))
+

@@ -33,6 +33,7 @@ CREATE TABLE comic_page (
   comic_id    INTEGER NOT NULL,
   page_number INTEGER NOT NULL,
   image       BLOB NOT NULL,
+  prompt      TEXT    NOT NULL,
   created     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   UNIQUE (comic_id, page_number),
