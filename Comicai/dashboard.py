@@ -297,4 +297,3 @@ def regenerate_last(comic_id):
         flash("Nie udało się zregenerować strony.")
 
     return redirect(url_for("dashboard.comic_detail", comic_id=comic_id))
-
